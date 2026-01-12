@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import { Shipment } from "../types";
 
 const SYSTEM_INSTRUCTION = `You are the Documentation Assistant for Texas American Trade Inc. (TATI).
@@ -74,9 +74,12 @@ Ship date [Date]: [Tasks]
 ---
 [Specific advice]`;
 
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY || "",
+  dangerouslyAllowBrowser: true,
+});
+
 export async function generateShipmentReport(shipment: Shipment): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-  
   const prompt = `Generate a full shipment documentation report for the following details:
   Product: ${shipment.productName}
   Quantity: ${shipment.quantity}
@@ -87,15 +90,15 @@ export async function generateShipmentReport(shipment: Shipment): Promise<string
   Is Hazmat: ${shipment.isHazmat ? 'Yes' : 'No'}`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-      },
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_INSTRUCTION },
+        { role: "user", content: prompt },
+      ],
     });
 
-    return response.text || "Failed to generate report.";
+    return response.choices[0]?.message?.content || "Failed to generate report.";
   } catch (error) {
     console.error("AI Generation Error:", error);
     return "Error generating AI report. Please check your API key and connection.";
@@ -103,23 +106,21 @@ export async function generateShipmentReport(shipment: Shipment): Promise<string
 }
 
 export async function askAssistant(question: string, context?: Shipment): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
-  
   let prompt = question;
   if (context) {
     prompt = `Context of current shipment: ${JSON.stringify(context)}\n\nQuestion: ${question}`;
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION + "\nRespond to specific questions concisely using the provided plain text formatting rules.",
-      },
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_INSTRUCTION + "\nRespond to specific questions concisely using the provided plain text formatting rules." },
+        { role: "user", content: prompt },
+      ],
     });
 
-    return response.text || "I'm sorry, I couldn't process that request.";
+    return response.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
   } catch (error) {
     console.error("AI Chat Error:", error);
     return "I encountered an error communicating with the server.";
