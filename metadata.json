@@ -1,0 +1,5 @@
+{
+  "name": "TATI Documentation Assistant",
+  "description": "Specialized tool for Texas American Trade Inc. to manage and generate documentation for oilfield chemical shipments from the USA to Mexico, featuring automated compliance checklists and timeline calculation.",
+  "requestFramePermissions": []
+}
